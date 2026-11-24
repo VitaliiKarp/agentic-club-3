@@ -1,22 +1,39 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="catalog-intro">
-  <h1>Знайди свою тусовку</h1>
-  <p>Майбутні публічні події</p>
+  <div class="hero-copy">
+    <h1>Знайди свою <em>тусовку.</em></h1>
+    <p>Збирай друзів, відкривай нові події та плануй, куди піти далі.</p>
+  </div>
+  <div class="hero-image" aria-hidden="true"></div>
+</section>
+<section aria-labelledby="catalog-heading">
+<div class="catalog-tools">
+  <h2 id="catalog-heading">Майбутні події</h2>
   <form method="get" class="search">
-    <label for="event-search">Назва події</label>
+    <label class="visually-hidden" for="event-search">Назва події</label>
     <div class="actions">
       <input type="search" name="q" id="event-search" maxlength="120" value="{{ query }}" placeholder="Наприклад, настільні ігри">
       <button class="button">Знайти</button>
       {% if query %}<a href="{% url 'catalog' %}">Очистити</a>{% endif %}
     </div>
   </form>
-</section>
+</div>
 <div class="cards">
   {% for event in page %}{% include "events/card.html" %}
   {% empty %}
-    <p class="panel empty">{% if query %}За цією назвою нічого не знайшлося.{% else %}Майбутніх публічних подій ще немає.{% endif %}</p>
+    <div class="panel empty">
+      <span class="empty-mark" aria-hidden="true">✳</span>
+      <div>
+        <p>{% if query %}За цією назвою нічого не знайшлося.{% else %}Майбутніх публічних подій ще немає.{% endif %}</p>
+        {% if not query %}
+          {% if user.is_authenticated %}<a href="{% url 'event_create' %}">Створити першу подію</a>
+          {% else %}<a href="{% url 'register' %}?next={% url 'event_create' %}">Створити першу подію</a>{% endif %}
+        {% endif %}
+      </div>
+    </div>
   {% endfor %}
 </div>
 {% include "events/pagination.html" with page_key="page" %}
+</section>
 {% endblock %}

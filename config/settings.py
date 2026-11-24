@@ -1,15 +1,17 @@
 import os
 from pathlib import Path
+from secrets import token_urlsafe
 
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+EVALUATION = os.environ.get("TUSOVKA_EVALUATION") == "1"
 DEBUG = os.environ.get("TUSOVKA_DEBUG", "1") == "1"
 SECRET_KEY = os.environ.get("TUSOVKA_SECRET_KEY")
 if not SECRET_KEY:
-    if not DEBUG:
+    if not DEBUG and not EVALUATION:
         raise ImproperlyConfigured("Set TUSOVKA_SECRET_KEY for production.")
-    SECRET_KEY = "django-insecure-tusovka-local-development-only"
+    SECRET_KEY = token_urlsafe(48)
 
 ALLOWED_HOSTS = [
     host.strip() for host in
@@ -69,10 +71,11 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+REQUIRE_HTTPS = not DEBUG and not EVALUATION
+SESSION_COOKIE_SECURE = REQUIRE_HTTPS
+CSRF_COOKIE_SECURE = REQUIRE_HTTPS
+SECURE_SSL_REDIRECT = REQUIRE_HTTPS
+SECURE_HSTS_SECONDS = 31536000 if REQUIRE_HTTPS else 0
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 DATA_UPLOAD_MAX_MEMORY_SIZE = 128 * 1024

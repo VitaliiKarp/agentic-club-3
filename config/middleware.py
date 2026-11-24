@@ -9,6 +9,10 @@ from django.utils.deprecation import MiddlewareMixin
 class DynamicResponsesMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         add_never_cache_headers(response)
+        response["Content-Security-Policy"] = (
+            "default-src 'self'; object-src 'none'; base-uri 'none'; "
+            "frame-ancestors 'none'; form-action 'self'"
+        )
         return response
 
     def process_exception(self, request, exception):

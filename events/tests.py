@@ -169,6 +169,33 @@ class EventTests(TestCase):
         event.refresh_from_db()
         self.assertNotEqual(event.title, "Інша назва")
 
+    def test_membership_changes_require_csrf_and_allowed_host(self):
+        event, _ = self.create_event()
+        visitor = Client(enforce_csrf_checks=True)
+        visitor.force_login(self.guest)
+        self.assertEqual(visitor.post(reverse("event_join", args=[event.pk])).status_code, 403)
+        self.assertFalse(event.participations.exists())
+        self.assertEqual(self.client.get("/", HTTP_HOST="unexpected.example").status_code, 400)
+
+    def test_text_and_private_responses_keep_browser_protections(self):
+        event, _ = self.create_event(title="Зустріч <друзів>", private=True)
+        detail = reverse("event_detail", args=[event.pk])
+        self.visitor.post(self.invite(event))
+        self.visitor.post(reverse("event_comment", args=[event.pk]), {"text": "Текст <для друзів>"})
+        response = self.visitor.get(detail)
+        self.assertContains(response, "Зустріч &lt;друзів&gt;")
+        self.assertContains(response, "Текст &lt;для друзів&gt;")
+        self.assertIn("frame-ancestors 'none'", response["Content-Security-Policy"])
+        self.assertIn("no-store", response["Cache-Control"])
+        hidden = self.client.get(detail)
+        self.assertEqual(hidden.status_code, 404)
+        self.assertIn("no-store", hidden["Cache-Control"])
+
+    def test_health_is_available_without_account(self):
+        response = self.client.get(reverse("health"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})
+
     def test_visibility_change_redacts_profile_and_allows_cancellation(self):
         event, data = self.create_event(title="Нове приватне ім’я")
         self.visitor.post(reverse("event_join", args=[event.pk]))

@@ -1,0 +1,8 @@
+.git
+.github-word-push
+.venv
+.env
+**/__pycache__
+*.sqlite3*
+staticfiles
+*.pdf
