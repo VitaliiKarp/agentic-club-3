@@ -12,7 +12,15 @@ from .models import Comment, Event, EventAccess, EventCover, Participation
 
 @transaction.atomic
 def save_event(user, data, event_id=None):
-    event = owned_event(user, event_id) if event_id else Event(author=user)
+    if event_id:
+        event = owned_event(user, event_id)
+    else:
+        submission_id = data.get("submission_id")
+        if submission_id:
+            existing = Event.objects.filter(author=user, submission_id=submission_id).first()
+            if existing is not None:
+                return existing
+        event = Event(author=user, submission_id=submission_id)
     starts_at = data["starts_at"]
     if starts_at != event.starts_at and starts_at <= timezone.now():
         raise ValidationError({"starts_at": "Виберіть час у майбутньому."})
@@ -56,14 +64,20 @@ def join_event(user, event_id):
 
 @transaction.atomic
 def cancel_registration(user, event_id):
-    Participation.objects.filter(event_id=event_id, user=user).delete()
-    return Event.objects.filter(visibility_filter(user), pk=event_id).exists()
+    removed, _ = Participation.objects.filter(event_id=event_id, user=user).delete()
+    can_open = Event.objects.filter(visibility_filter(user), pk=event_id).exists()
+    return removed > 0, can_open
 
 
 @transaction.atomic
-def add_comment(user, event_id, text):
+def add_comment(user, event_id, text, submission_id=None):
     event = visible_event(user, event_id)
-    Comment.objects.create(event=event, author=user, text=text)
+    if submission_id:
+        Comment.objects.get_or_create(
+            event=event, author=user, submission_id=submission_id, defaults={"text": text},
+        )
+    else:
+        Comment.objects.create(event=event, author=user, text=text)
 
 
 def invitation_digest(token):

@@ -89,6 +89,63 @@ class EventTests(TestCase):
         self.assertNotContains(self.client.get("/", {"q": "КИЄВІ"}), "Прогулянка Львовом")
         self.assertContains(self.client.get("/", {"q": "ЛЬВОВОМ"}), "Прогулянка Львовом")
 
+    def test_repeated_browser_forms_do_not_duplicate_events_or_comments(self):
+        create_url = reverse("event_create")
+        form = self.owner_client.get(create_url).context["form"]
+        submission_id = str(form["submission_id"].value())
+        data = {**event_form_data(), "submission_id": submission_id}
+        first = self.owner_client.post(create_url, {**data, "cover_file": cover_upload()})
+        event = Event.objects.get(author=self.author)
+        detail = reverse("event_detail", args=[event.pk])
+        self.assertRedirects(first, detail)
+        self.assertRedirects(
+            self.owner_client.post(create_url, {**data, "cover_file": cover_upload()}), detail,
+        )
+        self.assertEqual(Event.objects.filter(author=self.author).count(), 1)
+        other = self.visitor.post(create_url, {**data, "cover_file": cover_upload()})
+        self.assertRedirects(other, reverse("event_detail", args=[Event.objects.get(author=self.guest).pk]))
+
+        comment_url = reverse("event_comment", args=[event.pk])
+        comment_form = self.visitor.get(detail).context["comment_form"]
+        comment = {"text": "Прийду!", "submission_id": str(comment_form["submission_id"].value())}
+        for _ in range(2):
+            self.assertRedirects(self.visitor.post(comment_url, comment), detail)
+        self.assertEqual(Comment.objects.filter(event=event, author=self.guest).count(), 1)
+
+    def test_default_cover_is_available_only_to_viewers_of_the_event(self):
+        data = event_form_data(private=True)
+        response = self.owner_client.post(reverse("event_create"), data)
+        event = Event.objects.get(author=self.author)
+        detail = reverse("event_detail", args=[event.pk])
+        cover = reverse("event_cover", args=[event.pk])
+        self.assertRedirects(response, detail)
+        self.assertFalse(EventCover.objects.filter(event=event).exists())
+        self.assertEqual(self.visitor.get(cover).status_code, 404)
+        self.visitor.post(self.invite(event))
+        response = self.visitor.get(cover)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/jpeg")
+        self.assertIn("no-store", response["Cache-Control"])
+        with Image.open(BytesIO(b"".join(response.streaming_content))) as image:
+            self.assertEqual(image.format, "JPEG")
+
+    def test_signing_in_after_an_expired_action_returns_to_event_page(self):
+        event, _ = self.create_event()
+        password = "Garden-cycles-at-71"
+        self.guest.set_password(password)
+        self.guest.save()
+        join = reverse("event_join", args=[event.pk])
+        detail = reverse("event_detail", args=[event.pk])
+        response = self.client.post(join, follow=True)
+        self.assertContains(response, "Увійдіть та повторіть дію.")
+        self.assertEqual(response.context["next"], detail)
+        self.assertRedirects(self.client.post("/login/", {
+            "username": self.guest.email, "password": password, "next": detail,
+        }), detail)
+        self.assertFalse(event.participations.exists())
+        self.assertRedirects(self.client.post(join), detail)
+        self.assertTrue(event.participations.filter(user=self.guest).exists())
+
     def test_join_comment_cancel_and_author_participants(self):
         event, _ = self.create_event(capacity=1)
         pk = [event.pk]

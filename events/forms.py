@@ -1,4 +1,5 @@
 from io import BytesIO
+from uuid import uuid4
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -29,6 +30,7 @@ def prepare_cover(upload):
 
 
 class EventForm(forms.ModelForm):
+    submission_id = forms.UUIDField(required=False, widget=forms.HiddenInput, initial=uuid4)
     starts_at = forms.DateTimeField(
         label="Дата й час початку (Київ)",
         widget=forms.DateTimeInput(
@@ -43,7 +45,8 @@ class EventForm(forms.ModelForm):
     )
     cover_file = forms.FileField(
         label="Обкладинка",
-        help_text="JPEG, PNG або WebP до 3 МБ.",
+        required=False,
+        help_text="JPEG, PNG або WebP до 3 МБ. Якщо не вибрати файл, буде стандартна обкладинка.",
         widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
     )
 
@@ -54,8 +57,10 @@ class EventForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["cover_file"].required = not self.instance.pk
         self.initial["is_private"] = "1" if self.instance.is_private else "0"
+        if self.instance.pk:
+            self.fields.pop("submission_id")
+            self.fields["cover_file"].help_text = "JPEG, PNG або WebP до 3 МБ. Без нового файлу поточна обкладинка збережеться."
 
     def clean_cover_file(self):
         upload = self.cleaned_data["cover_file"]
@@ -63,6 +68,7 @@ class EventForm(forms.ModelForm):
 
 
 class CommentForm(forms.Form):
+    submission_id = forms.UUIDField(required=False, widget=forms.HiddenInput, initial=uuid4)
     text = forms.CharField(
         label="Коментар", max_length=1000, widget=forms.Textarea(attrs={"rows": 3}),
     )

@@ -1,12 +1,14 @@
+from functools import wraps
 from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import BooleanField, Case, Exists, OuterRef, Subquery, Value, When
-from django.http import Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -19,6 +21,20 @@ from .forms import CommentForm, EventForm
 from .models import Comment, Event, Participation, search_key
 
 INVITATION_SESSION_KEY = "pending_event_invitation"
+
+
+def login_for_event_action(view):
+    @wraps(view)
+    def wrapped(request, event_id):
+        if request.user.is_authenticated:
+            return view(request, event_id)
+        destination = (
+            reverse("profile") if request.POST.get("return_to") == "profile"
+            else reverse("event_detail", args=[event_id])
+        )
+        messages.info(request, "Увійдіть та повторіть дію.")
+        return redirect_to_login(destination)
+    return wrapped
 
 
 @require_safe
@@ -55,11 +71,12 @@ def detail(request, event_id):
 
 @require_safe
 def cover(request, event_id):
-    content = get_object_or_404(
-        Event.objects.filter(visibility_filter(request.user), cover__isnull=False)
-        .values_list("cover__content", flat=True),
+    _, content = get_object_or_404(
+        Event.objects.filter(visibility_filter(request.user)).values_list("pk", "cover__content"),
         pk=event_id,
     )
+    if content is None:
+        return FileResponse((settings.BASE_DIR / "static" / "hero.jpg").open("rb"), content_type="image/jpeg")
     return HttpResponse(content, content_type="image/jpeg")
 
 
@@ -114,7 +131,7 @@ def participants(request, event_id):
 
 
 @require_POST
-@login_required
+@login_for_event_action
 def join_event(request, event_id):
     result = services.join_event(request.user, event_id)
     if result == "joined":
@@ -127,22 +144,26 @@ def join_event(request, event_id):
 
 
 @require_POST
-@login_required
+@login_for_event_action
 def cancel_registration(request, event_id):
-    can_open = services.cancel_registration(request.user, event_id)
-    if can_open and request.POST.get("return_to") != "profile":
+    removed, can_open = services.cancel_registration(request.user, event_id)
+    if removed:
         messages.success(request, "Ви скасували участь.")
+    if can_open and request.POST.get("return_to") != "profile":
         return redirect("event_detail", event_id=event_id)
     return redirect("profile")
 
 
 @require_POST
-@login_required
+@login_for_event_action
 def add_comment(request, event_id):
     event = visible_event(request.user, event_id, queryset=event_cards(Event.objects.all()))
     form = CommentForm(request.POST)
     if form.is_valid():
-        services.add_comment(request.user, event_id, form.cleaned_data["text"])
+        services.add_comment(
+            request.user, event_id, form.cleaned_data["text"], form.cleaned_data["submission_id"],
+        )
+        messages.success(request, "Коментар збережено.")
         return redirect("event_detail", event_id=event_id)
     return render_detail(request, event, form, status=400)
 
@@ -167,7 +188,7 @@ def profile(request):
 
 
 @require_POST
-@login_required
+@login_for_event_action
 @sensitive_variables("token", "invite_url")
 def rotate_invitation(request, event_id):
     token = services.rotate_invitation(request.user, event_id)

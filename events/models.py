@@ -17,6 +17,7 @@ class Event(models.Model):
     capacity = models.PositiveIntegerField("Кількість місць")
     is_private = models.BooleanField(default=False)
     invite_digest = models.CharField(max_length=64, null=True, unique=True, editable=False)
+    submission_id = models.UUIDField(null=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -29,6 +30,7 @@ class Event(models.Model):
                 condition=models.Q(is_private=True) | models.Q(invite_digest__isnull=True),
                 name="event_invite_only_for_private",
             ),
+            models.UniqueConstraint(fields=["author", "submission_id"], name="event_submission_once"),
         ]
         indexes = [models.Index(fields=["is_private", "starts_at"], name="event_catalog_order")]
 
@@ -73,4 +75,12 @@ class Comment(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="comments")
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     text = models.TextField(max_length=1000)
+    submission_id = models.UUIDField(null=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "author", "submission_id"], name="comment_submission_once",
+            ),
+        ]
