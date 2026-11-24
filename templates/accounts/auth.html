@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{% if registering %}Реєстрація{% else %}Вхід{% endif %} · Тусовка{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>{% if registering %}Створити акаунт{% else %}Увійти{% endif %}</h1>
+  <form method="post" class="stack">
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    {{ form.as_p }}
+    <button class="button">{% if registering %}Зареєструватися{% else %}Увійти{% endif %}</button>
+  </form>
+  {% if registering %}
+    <p>Вже маєте акаунт? <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Увійти</a></p>
+  {% else %}
+    <p>Ще немає акаунта? <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Зареєструватися</a></p>
+  {% endif %}
+</section>
+{% endblock %}

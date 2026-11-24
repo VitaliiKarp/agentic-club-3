@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="catalog-intro">
+  <h1>Знайди свою тусовку</h1>
+  <p>Майбутні публічні події</p>
+  <form method="get" class="search">
+    <label for="event-search">Назва події</label>
+    <div class="actions">
+      <input type="search" name="q" id="event-search" maxlength="120" value="{{ query }}" placeholder="Наприклад, настільні ігри">
+      <button class="button">Знайти</button>
+      {% if query %}<a href="{% url 'catalog' %}">Очистити</a>{% endif %}
+    </div>
+  </form>
+</section>
+<div class="cards">
+  {% for event in page %}{% include "events/card.html" %}
+  {% empty %}
+    <p class="panel empty">{% if query %}За цією назвою нічого не знайшлося.{% else %}Майбутніх публічних подій ще немає.{% endif %}</p>
+  {% endfor %}
+</div>
+{% include "events/pagination.html" with page_key="page" %}
+{% endblock %}

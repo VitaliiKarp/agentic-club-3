@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Видалити подію · Тусовка{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>Видалити подію?</h1>
+  <p>«{{ event.title }}» буде видалено разом із коментарями та записами учасників.</p>
+  <form method="post" class="actions">
+    {% csrf_token %}<button class="button danger">Видалити подію</button>
+    <a href="{% url 'event_detail' event.pk %}">Назад до події</a>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,5 @@
+<form method="post" action="{% url 'event_cancel' event.pk %}">
+  {% csrf_token %}
+  {% if from_profile %}<input type="hidden" name="return_to" value="profile">{% endif %}
+  <button class="button secondary small">Скасувати участь</button>
+</form>

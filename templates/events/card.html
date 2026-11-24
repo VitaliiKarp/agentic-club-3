@@ -1,0 +1,12 @@
+<article class="card">
+  <img src="{% url 'event_cover' event.pk %}" alt="" width="320" height="190" loading="lazy">
+  <div class="card-body">
+    <p class="meta"><time datetime="{{ event.starts_at|date:'c' }}">{{ event.starts_at|date:"j E Y, H:i" }}</time></p>
+    <h2><a href="{% url 'event_detail' event.pk %}">{{ event.title }}</a></h2>
+    <p>{% if event.is_private %}<span class="tag">Приватна</span> {% endif %}
+    {% if now and event.starts_at <= now %}<span class="tag">Вже почалася</span>
+    {% elif event.remaining %}Вільних місць: {{ event.remaining }}
+    {% else %}Місць немає{% endif %}</p>
+    {% if cancel_from_profile %}{% include "events/cancel_form.html" with from_profile=True %}{% endif %}
+  </div>
+</article>

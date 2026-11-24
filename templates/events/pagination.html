@@ -1,0 +1,15 @@
+{% if page.has_other_pages %}
+<nav class="pagination" aria-label="Сторінки списку">
+  {% if page.has_previous %}
+    {% if page_key == 'created_page' %}<a href="{% querystring request.GET created_page=page.previous_page_number %}">Попередня</a>
+    {% elif page_key == 'joined_page' %}<a href="{% querystring request.GET joined_page=page.previous_page_number %}">Попередня</a>
+    {% else %}<a href="{% querystring request.GET page=page.previous_page_number %}">Попередня</a>{% endif %}
+  {% endif %}
+  <span>{{ page.number }} з {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}
+    {% if page_key == 'created_page' %}<a href="{% querystring request.GET created_page=page.next_page_number %}">Наступна</a>
+    {% elif page_key == 'joined_page' %}<a href="{% querystring request.GET joined_page=page.next_page_number %}">Наступна</a>
+    {% else %}<a href="{% querystring request.GET page=page.next_page_number %}">Наступна</a>{% endif %}
+  {% endif %}
+</nav>
+{% endif %}

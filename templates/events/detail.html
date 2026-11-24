@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} · Тусовка{% endblock %}
+{% block content %}
+<article class="panel detail">
+  <img class="detail-cover" src="{% url 'event_cover' event.pk %}" alt="" width="720" height="360">
+  <div class="detail-body">
+    <div>
+      <p class="meta"><time datetime="{{ event.starts_at|date:'c' }}">{{ event.starts_at|date:"j E Y, H:i" }}</time> · Київ
+      {% if event.is_private %} · Приватна подія{% endif %}</p>
+      <h1>{{ event.title }}</h1>
+      <p class="user-text">{{ event.description }}</p>
+    </div>
+    <aside aria-label="Участь" class="participation">
+      <strong>Вільних місць: {{ event.remaining }} з {{ event.capacity }}</strong>
+      {% if booked %}
+        <p>Ви йдете на подію.</p>
+        {% include "events/cancel_form.html" %}
+      {% elif started %}
+        <p>Подія вже почалася.</p>
+      {% elif event.remaining == 0 %}
+        <p>Усі місця зайняті.</p>
+      {% elif user.is_authenticated %}
+        <form method="post" action="{% url 'event_join' event.pk %}">
+          {% csrf_token %}<button class="button">Іду</button>
+        </form>
+      {% else %}
+        <p><a href="{% url 'login' %}?next={{ request.path|urlencode }}">Увійдіть, щоб записатися</a></p>
+      {% endif %}
+    </aside>
+  </div>
+  {% if owner %}
+  <div class="owner-actions actions">
+    <a href="{% url 'event_edit' event.pk %}">Редагувати</a>
+    <a href="{% url 'event_participants' event.pk %}">Учасники</a>
+    <a href="{% url 'event_delete' event.pk %}">Видалити</a>
+    {% if event.is_private %}
+      <form method="post" action="{% url 'event_invite' event.pk %}">
+        {% csrf_token %}
+        <button class="button small">{% if event.invite_digest %}Замінити посилання{% else %}Створити запрошення{% endif %}</button>
+      </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</article>
+<section class="panel comments">
+  <h2>Коментарі</h2>
+  {% if user.is_authenticated %}
+    <form method="post" action="{% url 'event_comment' event.pk %}" class="stack">
+      {% csrf_token %}{{ comment_form.as_p }}
+      <div><button class="button">Додати коментар</button></div>
+    </form>
+  {% else %}
+    <p><a href="{% url 'login' %}?next={{ request.path|urlencode }}">Увійдіть, щоб написати коментар</a></p>
+  {% endif %}
+  <ul class="comment-list">
+    {% for comment in page %}
+      <li><strong>{{ comment.author.public_name }}</strong> <time class="meta" datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"j E, H:i" }}</time><p class="user-text">{{ comment.text }}</p></li>
+    {% empty %}<li>Коментарів ще немає.</li>{% endfor %}
+  </ul>
+  {% include "events/pagination.html" with page_key="page" %}
+</section>
+{% endblock %}

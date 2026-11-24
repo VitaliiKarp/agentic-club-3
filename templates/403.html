@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Дія недоступна · Тусовка{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>Дія недоступна</h1>
+  <p>Поверніться на попередню сторінку й оновіть її перед повторною спробою.</p>
+  <a href="{% url 'catalog' %}">Каталог подій</a>
+</section>
+{% endblock %}

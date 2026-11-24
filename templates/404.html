@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Сторінка недоступна · Тусовка{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>Сторінка недоступна</h1>
+  <p>Перевірте посилання або поверніться до каталогу подій.</p>
+  <a class="button" href="{% url 'catalog' %}">Каталог подій</a>
+</section>
+{% endblock %}

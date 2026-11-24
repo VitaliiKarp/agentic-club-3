@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Посилання-запрошення · Тусовка{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>Посилання-запрошення</h1>
+  <p>Скопіюйте посилання й надішліть тим, кого хочете запросити. Якщо загубите його, створіть нове зі сторінки події.</p>
+  <label for="invite-url">Посилання</label>
+  <input id="invite-url" value="{{ invite_url }}" readonly>
+  <p><a href="{% url 'event_detail' event_id %}">Повернутися до події</a></p>
+</section>
+{% endblock %}

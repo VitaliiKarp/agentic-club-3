@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Учасники · Тусовка{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>Учасники</h1>
+  <p><a href="{% url 'event_detail' event.pk %}">{{ event.title }}</a></p>
+  <p>Записалося {{ page.paginator.count }} з {{ event.capacity }}.</p>
+  <ul>
+    {% for entry in page %}<li>{{ entry.user.public_name }}</li>
+    {% empty %}<li>Поки ніхто не записався.</li>{% endfor %}
+  </ul>
+  {% include "events/pagination.html" with page_key="page" %}
+</section>
+{% endblock %}

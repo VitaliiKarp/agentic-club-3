@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Редагувати подію{% else %}Створити подію{% endif %} · Тусовка{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>{% if editing %}Редагувати подію{% else %}Створити подію{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data" class="stack">
+    {% csrf_token %}
+    {{ form.as_p }}
+    {% if form.errors %}<p class="meta">Якщо ви вибирали нову обкладинку, завантажте її повторно.</p>{% endif %}
+    <button class="button">{% if editing %}Зберегти зміни{% else %}Створити подію{% endif %}</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Запрошення · Тусовка{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>Запрошення на подію</h1>
+  {% if user.is_authenticated %}
+    <form method="post">{% csrf_token %}<button class="button">Прийняти запрошення</button></form>
+  {% else %}
+    <p>Увійдіть або створіть акаунт, щоб прийняти запрошення.</p>
+    <div class="actions">
+      <a class="button" href="{% url 'login' %}?{{ auth_query }}">Увійти</a>
+      <a href="{% url 'register' %}?{{ auth_query }}">Створити акаунт</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

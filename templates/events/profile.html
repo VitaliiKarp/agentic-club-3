@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Мій профіль · Тусовка{% endblock %}
+{% block content %}
+<h1>Мій профіль</h1>
+<section class="profile-section">
+  <h2>Я створив</h2>
+  <div class="cards">
+    {% for event in created %}{% include "events/card.html" %}
+    {% empty %}<p class="panel empty">Ви ще не створили жодної події.</p>{% endfor %}
+  </div>
+  {% include "events/pagination.html" with page=created page_key="created_page" %}
+</section>
+<section class="profile-section">
+  <h2>Я йду</h2>
+  <div class="cards">
+    {% for event in joined %}
+      {% if event.can_open %}{% include "events/card.html" with cancel_from_profile=True %}
+      {% else %}
+      <article class="panel">
+        <h3>Приватна подія</h3>
+        <p>Попросіть автора надіслати запрошення, щоб побачити подробиці.</p>
+        {% include "events/cancel_form.html" with from_profile=True %}
+      </article>
+      {% endif %}
+    {% empty %}<p class="panel empty">Ви ще не записалися на жодну подію.</p>{% endfor %}
+  </div>
+  {% include "events/pagination.html" with page=joined page_key="joined_page" %}
+</section>
+{% endblock %}
